@@ -200,7 +200,8 @@ class token:
 			self.spectatingUserID = host.userID
 
 			# Add us to host's spectator list
-			host.spectators.append(self.token)
+			if(self.token not in host.spectators):
+				host.spectators.append(self.token)
 
 			# Create and join spectator stream
 			streamName = "spect/{}".format(host.userID)
@@ -214,7 +215,7 @@ class token:
 			# Create and join #spectator (#spect_userid) channel
 			glob.channels.addTempChannel("#spect_{}".format(host.userID))
 			chat.joinChannel(token=self, channel="#spect_{}".format(host.userID))
-			if len(host.spectators) == 1:
+			if("#spect_{}".format(host.userID) not in host.joinedChannels):
 				# First spectator, send #spectator join to host too
 				chat.joinChannel(token=host, channel="#spect_{}".format(host.userID))
 
@@ -480,7 +481,7 @@ class token:
 		:return:
 		"""
 		self.restricted = True
-		chat.sendMessage("FokaBot", self.username, "Your account is currently in restricted mode. Please visit ripple's website for more information.")
+		chat.sendMessage("FokaBot", self.username, "Your account is currently in restricted mode. Please visit Gatari's website for more information.")
 
 	def resetRestricted(self):
 		"""

@@ -33,7 +33,7 @@ from objects import chatFilters
 from objects import fokabot
 from objects import glob
 from pubSubHandlers import changeUsernameHandler
-
+from pubSubHandlers import createClanHandler
 from pubSubHandlers import disconnectHandler
 from pubSubHandlers import banHandler
 from pubSubHandlers import notificationHandler
@@ -279,6 +279,7 @@ if __name__ == "__main__":
 			"peppy:silence": updateSilenceHandler.handler(),
 			"peppy:ban": banHandler.handler(),
 			"peppy:notification": notificationHandler.handler(),
+			"peppy:create_clan": createClanHandler.handler(),
 		}).start()
 
 		# Start tornado

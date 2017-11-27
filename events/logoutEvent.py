@@ -41,6 +41,7 @@ def handle(userToken, _=None, deleteToken=True):
 		# Delete token
 		if deleteToken:
 			glob.tokens.deleteToken(requestToken)
+			glob.tokens.deleteOldTokens(userID)
 		else:
 			userToken.kicked = True
 

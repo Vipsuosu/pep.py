@@ -102,8 +102,7 @@ def handle(tornadoRequest):
 
 		# Delete old tokens for that user and generate a new one
 		isTournament = "tourney" in osuVersion
-		if not isTournament:
-			glob.tokens.deleteOldTokens(userID)
+		glob.tokens.deleteOldTokens(userID)
 		responseToken = glob.tokens.addToken(userID, requestIP, timeOffset=timeOffset, tournament=isTournament, friendPM=BlockNonFriendPM)
 		responseTokenString = responseToken.token
 
@@ -166,10 +165,13 @@ def handle(tornadoRequest):
 		# TODO: Configurable default channels
 		chat.joinChannel(token=responseToken, channel="#osu")
 		chat.joinChannel(token=responseToken, channel="#announce")
-
+		chat.joinChannel(token=responseToken, channel="#beatmaps")
 		# Join admin channel if we are an admin
 		if responseToken.admin or responseToken.privileges & privileges.USER_DONOR > 0:
 			chat.joinChannel(token=responseToken, channel="#admin")
+		clan = glob.db.fetch("SELECT clanid FROM clan_users WHERE userid = %s",[userID])
+		if clan is not None:
+			chat.joinChannel(token=responseToken, channel="#clan_{}".format(clan["clanid"]))
 
 		# Output channels info
 		for key, value in glob.channels.channels.items():
@@ -180,8 +182,8 @@ def handle(tornadoRequest):
 		responseToken.enqueue(serverPackets.friendList(userID))
 
 		# Send main menu icon
-		if glob.banchoConf.config["menuIcon"] != "":
-			responseToken.enqueue(serverPackets.mainMenuIcon(glob.banchoConf.config["menuIcon"]))
+		#if glob.banchoConf.config["menuIcon"] != "":
+			#responseToken.enqueue(serverPackets.mainMenuIcon(glob.banchoConf.config["menuIcon"]))
 
 		# Send online users' panels
 		with glob.tokens:
@@ -190,7 +192,7 @@ def handle(tornadoRequest):
 					responseToken.enqueue(serverPackets.userPanel(token.userID))
 
 		# Get location and country from ip.zxq.co or database
-		if glob.localize:
+		if glob.localize and (firstLogin == True or responseToken.privileges & privileges.USER_DONOR <= 0):
 			# Get location and country from IP
 			latitude, longitude = locationHelper.getLocation(requestIP)
 			countryLetters = locationHelper.getCountry(requestIP)

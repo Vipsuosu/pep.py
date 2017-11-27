@@ -921,12 +921,22 @@ def resetPendingFlag(userID, success=True):
 	"""
 	glob.db.execute("UPDATE users SET privileges = privileges & %s WHERE id = %s LIMIT 1", [~privileges.USER_PENDING_VERIFICATION, userID])
 	if success:
-		glob.db.execute("UPDATE users SET privileges = privileges | %s WHERE id = %s LIMIT 1", [(privileges.USER_PUBLIC | privileges.USER_NORMAL), userID])
+		key = glob.db.fetch("SELECT beta_key FROM users WHERE id = %s",[userID])["beta_key"]
+		vk = glob.redis.get("vk:"+key)
+		if vk is None:
+			glob.db.execute("UPDATE users SET privileges = privileges | %s WHERE id = %s LIMIT 1", [(privileges.USER_PUBLIC | privileges.USER_NORMAL), userID])
+		else:
+			vk = vk.decode("utf-8").split('|')
+			print(vk)
+			glob.db.execute("UPDATE users SET privileges = privileges | %s, vk = %s WHERE id = %s LIMIT 1", [(privileges.USER_PUBLIC | privileges.USER_NORMAL), vk[0],userID])
+			if(int(vk[1]) > 0):
+				donor = time.time()+((30*86400)*int(vk[1]))
+				print(donor)
+				glob.db.execute("UPDATE users SET privileges = privileges | %s, donor_expire = %s WHERE id = %s LIMIT 1",	[privileges.USER_DONOR, donor, userID])
 
 def verifyUser(userID, hashes):
 	"""
 	Activate `userID`'s account.
-
 	:param userID: user id
 	:param hashes: 	Peppy's botnet (client data) structure (new line = "|", already split)
 					[0] osu! version
@@ -957,7 +967,7 @@ def verifyUser(userID, hashes):
 	else:
 		# Running under windows, full check
 		log.debug("Veryfing with Windows hardware")
-		match = glob.db.fetchAll("SELECT userid FROM hw_user WHERE mac = %(mac)s AND unique_id = %(uid)s AND disk_id = %(diskid)s AND userid != %(userid)s AND activated = 1 LIMIT 1", {
+		match = glob.db.fetchAll("SELECT userid FROM hw_user WHERE (mac = %(mac)s OR unique_id = %(uid)s ) AND disk_id = %(diskid)s AND userid != %(userid)s AND activated = 1 LIMIT 1", {
 			"mac": hashes[2],
 			"uid": hashes[3],
 			"diskid": hashes[4],

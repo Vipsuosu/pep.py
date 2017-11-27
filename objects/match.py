@@ -151,7 +151,7 @@ class match:
 		self.hostUserID = newHost
 		token.enqueue(serverPackets.matchTransferHost())
 		self.sendUpdates()
-		log.info("MPROOM{}: {} is now the host".format(self.matchID, token.username))
+		log.error("MPROOM{}: {} is now the host".format(self.matchID, token.username))
 		return True
 
 	def removeHost(self):

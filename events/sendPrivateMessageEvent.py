@@ -12,7 +12,7 @@ def handle(userToken, packetData):
 	if targetToken is not None:
 		if(userToken.admin == False and targetToken.BlockNonFriendPM == True):
 			toId = targetToken.userID
-			if glob.db.fetch("SELECT id FROM users_relationships WHERE user1 = %s AND user2 = %s LIMIT 1", [userToken.userID, toId]) is None:
+			if glob.db.fetch("SELECT id FROM users_relationships WHERE user2 = %s AND user1 = %s LIMIT 1", [userToken.userID, toId]) is None:
 				userToken.enqueue(serverPackets.UserPMBlocked(userToken.username, userToken.userID, packetData["to"], packetData["message"]))
 			else:
 				chat.sendMessage(token=userToken, to=packetData["to"], message=packetData["message"])

@@ -1,5 +1,7 @@
 from objects import glob
 from constants import clientPackets
+from common.log import logUtils as log
+
 
 def handle(userToken, packetData):
 	# Get packet data
@@ -24,4 +26,5 @@ def handle(userToken, packetData):
 		return
 
 	# Transfer host
+	log.error("match {} | host {} transferHost to {}".format(matchID,userToken.userID,packetData["slotID"]))
 	match.transferHost(packetData["slotID"])
