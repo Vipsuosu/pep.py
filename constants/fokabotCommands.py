@@ -2,7 +2,8 @@ import json
 import random
 import re
 import threading
-
+import sys
+import traceback
 
 import requests
 import time
@@ -594,7 +595,7 @@ def getTillerinoRecommendation(fro, chan, message):
         # Return tillerino message
 		return getPPMessage(userID)
 	except Exception as a:
-		log.error(a)
+		log.error("Unknown error in {}!\n```{}\n{}```".format("fokabotCommands", sys.exc_info(), traceback.format_exc()))
 		return False
 		
 def tillerinoAcc(fro, chan, message):
@@ -680,16 +681,16 @@ def tillerinoLast(fro, chan, message):
 			ifFc = " (FC)" if data["max_combo"] == data["fc"] else " {0}x/{1}x".format(data["max_combo"], data["fc"])
 		beatmapLink = "[http://osu.ppy.sh/b/{1} {0}]".format(data["sn"], data["bid"])
 
-		hasPP = data["play_mode"] == gameModes.STD or data["play_mode"] == gameModes.MANIA
+		hasPP = data["play_mode"] != gameModes.CTB
 
 		msg = ifPlayer
 		msg += beatmapLink
 		if data["play_mode"] != gameModes.STD:
 			msg += " <{0}>".format(gameModes.getGameModeForPrinting(data["play_mode"]))
 		if data["mods"] and data["play_mode"] == gameModes.STD:
-			if(data["mods"] >= 536870912):
+			if(data["mods"] & 536870912):
 				msg += ' ~ScoreV2~'
-			if(data["mods"] != 536870912):
+			if(data["mods"] > 0):
 				msg += ' +' + generalUtils.readableMods(data["mods"])
 			
 		if not hasPP:
@@ -705,7 +706,7 @@ def tillerinoLast(fro, chan, message):
 		msg += " | {0:.2f}pp".format(data["pp"])
 
 		stars = data[diffString]
-		if data["mods"] and data["play_mode"] == gameModes.STD:
+		if data["mods"] and hasPP:
 			token = glob.tokens.getTokenFromUsername(fro)
 			if token is None:
 				return False
@@ -842,6 +843,15 @@ def report(fro, chan, message):
 					token.enqueue(serverPackets.notification(msg))
 	return False
 
+def rtx(fro, chan, message):
+	target = message[0]
+	message = " ".join(message[1:])
+	targetUserID = userUtils.getIDSafe(target)
+	if not targetUserID:
+		return "{}: user not found".format(target)
+	userToken = glob.tokens.getTokenFromUserID(targetUserID, ignoreIRC=True, _all=False)
+	userToken.enqueue(serverPackets.rtx(message.encode("utf-8").decode("latin-1")))
+	return ":ok_hand:"
 
 
 def multiplayer(fro, chan, message):
@@ -1349,6 +1359,11 @@ commands = [
 		"privileges": privileges.ADMIN_MANAGE_SERVERS,
 		"syntax": "<username> <server_address>",
 		"callback": switchServer
+	}, {
+		"trigger": "!rtx",
+		"privileges": privileges.ADMIN_KICK_USERS,
+		"syntax": "<username> <message>",
+		"callback": rtx
 	}
 ]
 

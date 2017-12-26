@@ -38,6 +38,7 @@ class token:
 		self.kicked = False
 		self.restricted = userUtils.isRestricted(self.userID)
 		self.loginTime = int(time.time())
+		self.allowed = 1 if glob.db.fetch("SELECT allowed FROM users WHERE id = %s",[userID])["allowed"] else 0
 		self.pingTime = self.loginTime
 		self.timeOffset = timeOffset
 		self.streams = []
@@ -323,9 +324,7 @@ class token:
 		chat.joinChannel(token=self, channel="#multi_{}".format(self.matchID))
 		self.enqueue(serverPackets.matchJoinSuccess(matchID))
 
-		# Alert the user if we have just joined a tourney match
-		if match.isTourney:
-			self.enqueue(serverPackets.notification("You are now in a tournament match."))
+
 
 	def leaveMatch(self):
 		"""

@@ -1,5 +1,6 @@
 import copy
 import json
+import threading
 from common.log import logUtils as log
 from constants import dataTypes
 from constants import matchModModes
@@ -60,6 +61,7 @@ class match:
 		self.isTourney = isTourney
 		self.isLocked = False 	# if True, users can't change slots/teams. Used in tourney matches
 		self.isStarting = False
+		self._lock = threading.Lock()
 
 		# Create all slots and reset them
 		self.slots = []
@@ -68,6 +70,7 @@ class match:
 		if players < 16:
 			for _ in range(players,16):
 				self.slots.append(slot(slotStatuses.LOCKED))
+
 		# Create streams
 		glob.streams.add(self.streamName)
 		glob.streams.add(self.playingStreamName)
@@ -85,55 +88,55 @@ class match:
 		"""
 		# General match info
 		# TODO: Test without safe copy, the error might have been caused by outdated python bytecode cache
-		safeMatch = copy.deepcopy(self)
+		# safeMatch = copy.deepcopy(self)
 		struct = [
-			[safeMatch.matchID, dataTypes.UINT16],
-			[int(safeMatch.inProgress), dataTypes.BYTE],
+			[self.matchID, dataTypes.UINT16],
+			[int(self.inProgress), dataTypes.BYTE],
 			[0, dataTypes.BYTE],
-			[safeMatch.mods, dataTypes.UINT32],
-			[safeMatch.matchName, dataTypes.STRING]
+			[self.mods, dataTypes.UINT32],
+			[self.matchName, dataTypes.STRING]
 		]
-		if censored and safeMatch.matchPassword:
+		if censored and self.matchPassword:
 			struct.append(["redacted", dataTypes.STRING])
 		else:
-			struct.append([safeMatch.matchPassword, dataTypes.STRING])
+			struct.append([self.matchPassword, dataTypes.STRING])
 
 		struct.extend([
-			[safeMatch.beatmapName, dataTypes.STRING],
-			[safeMatch.beatmapID, dataTypes.UINT32],
-			[safeMatch.beatmapMD5, dataTypes.STRING]
+			[self.beatmapName, dataTypes.STRING],
+			[self.beatmapID, dataTypes.UINT32],
+			[self.beatmapMD5, dataTypes.STRING]
 		])
 
 		# Slots status IDs, always 16 elements
 		for i in range(0,16):
-			struct.append([safeMatch.slots[i].status, dataTypes.BYTE])
+			struct.append([self.slots[i].status, dataTypes.BYTE])
 
 		# Slot teams, always 16 elements
 		for i in range(0,16):
-			struct.append([safeMatch.slots[i].team, dataTypes.BYTE])
+			struct.append([self.slots[i].team, dataTypes.BYTE])
 
 		# Slot user ID. Write only if slot is occupied
 		for i in range(0,16):
-			if safeMatch.slots[i].user is not None and safeMatch.slots[i].user in glob.tokens.tokens:
-				struct.append([glob.tokens.tokens[safeMatch.slots[i].user].userID, dataTypes.UINT32])
+			if self.slots[i].user is not None and self.slots[i].user in glob.tokens.tokens:
+				struct.append([glob.tokens.tokens[self.slots[i].user].userID, dataTypes.UINT32])
 
 		# Other match data
 		struct.extend([
-			[safeMatch.hostUserID, dataTypes.SINT32],
-			[safeMatch.gameMode, dataTypes.BYTE],
-			[safeMatch.matchScoringType, dataTypes.BYTE],
-			[safeMatch.matchTeamType, dataTypes.BYTE],
-			[safeMatch.matchModMode, dataTypes.BYTE],
+			[self.hostUserID, dataTypes.SINT32],
+			[self.gameMode, dataTypes.BYTE],
+			[self.matchScoringType, dataTypes.BYTE],
+			[self.matchTeamType, dataTypes.BYTE],
+			[self.matchModMode, dataTypes.BYTE],
 		])
 
 		# Slot mods if free mod is enabled
-		if safeMatch.matchModMode == matchModModes.FREE_MOD:
+		if self.matchModMode == matchModModes.FREE_MOD:
 			for i in range(0,16):
-				struct.append([safeMatch.slots[i].mods, dataTypes.UINT32])
+				struct.append([self.slots[i].mods, dataTypes.UINT32])
 
 		# Seed idk
 		# TODO: Implement this, it should be used for mania "random" mod
-		struct.append([safeMatch.seed, dataTypes.UINT32])
+		struct.append([self.seed, dataTypes.UINT32])
 
 		return struct
 
@@ -151,7 +154,7 @@ class match:
 		self.hostUserID = newHost
 		token.enqueue(serverPackets.matchTransferHost())
 		self.sendUpdates()
-		log.error("MPROOM{}: {} is now the host".format(self.matchID, token.username))
+		log.info("MPROOM{}: {} is now the host".format(self.matchID, token.username))
 		return True
 
 	def removeHost(self):
@@ -429,6 +432,12 @@ class match:
 		# Console output
 		log.info("MPROOM{}: Match completed".format(self.matchID))
 
+		# If this is a tournament match, then we send a notification in the chat
+		# saying that the match has completed.
+		chanName = "#multi_{}".format(self.matchID)
+		if self.isTourney and (chanName in glob.channels.channels):
+			chat.sendMessage("FokaBot", chanName, "Match has just finished.")
+
 	def resetSlots(self):
 		for i in range(0,16):
 			if self.slots[i].user is not None and self.slots[i].status == slotStatuses.PLAYING:
@@ -667,7 +676,6 @@ class match:
 				chat.sendMessage(token=froToken, to=toToken.username, message=message)
 			else:
 				toToken.enqueue(serverPackets.InviteUser(froToken.username, froToken.userID, toToken.username, message))
-		
 
 	def countUsers(self):
 		"""
@@ -821,3 +829,44 @@ class match:
 		for _slot in self.slots:
 			if _slot.status == slotStatuses.READY:
 				_slot.status = slotStatuses.NOT_READY
+
+	def sendReadyStatus(self):
+		chanName = "#multi_{}".format(self.matchID)
+
+		# Make sure match exists before attempting to do anything else
+		if chanName not in glob.channels.channels:
+			return
+
+		totalUsers = 0
+		readyUsers = 0
+
+		for slot in self.slots:
+			# Make sure there is a user in this slot
+			if slot.user is None:
+				continue
+
+			# In this slot there is a user, so we increase the amount of total users
+			# in this multi room.
+			totalUsers += 1
+
+			if slot.status == slotStatuses.READY:
+				readyUsers += 1
+
+		message = "{} users ready out of {}.".format(readyUsers, totalUsers)
+
+		if totalUsers == readyUsers:
+			message += " All users ready!"
+
+		# Check whether there is anyone left in this match.
+		if totalUsers == 0:
+			message = "The match is now empty."
+
+		chat.sendMessage("FokaBot", chanName, message)
+
+	def __enter__(self):
+		# 🌚🌚🌚🌚🌚
+		self._lock.acquire()
+		return self
+
+	def __exit__(self, exc_type, exc_val, exc_tb):
+		self._lock.release()

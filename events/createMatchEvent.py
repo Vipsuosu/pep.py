@@ -11,23 +11,22 @@ def handle(userToken, packetData):
 
 		# Read packet data
 		packetData = clientPackets.createMatch(packetData)
+
 		# Create a match object
 		# TODO: Player number check
-		matchID = glob.matches.createMatch(packetData["matchName"], packetData["matchPassword"], packetData["beatmapID"], packetData["beatmapName"], packetData["beatmapMD5"], packetData["gameMode"], userID, packetData["players"])
+		matchID = glob.matches.createMatch(packetData["matchName"], packetData["matchPassword"], packetData["beatmapID"], packetData["beatmapName"], packetData["beatmapMD5"], packetData["gameMode"], userID)
 
 		# Make sure the match has been created
 		if matchID not in glob.matches.matches:
 			raise exceptions.matchCreateError()
 
-		# Get match object
-		match = glob.matches.matches[matchID]
+		with glob.matches.matches[matchID] as match:
+			# Join that match
+			userToken.joinMatch(matchID)
 
-		# Join that match
-		userToken.joinMatch(matchID)
-
-		# Give host to match creator
-		match.setHost(userID)
-		match.sendUpdates()
-		match.changePassword(packetData["matchPassword"])
+			# Give host to match creator
+			match.setHost(userID)
+			match.sendUpdates()
+			match.changePassword(packetData["matchPassword"])
 	except exceptions.matchCreateError:
 		log.error("Error while creating match!")
