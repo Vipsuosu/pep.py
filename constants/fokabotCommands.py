@@ -79,15 +79,20 @@ def roll(fro, chan, message):
 #	return random.choice(["yes", "no", "maybe"])
 
 def alert(fro, chan, message):
-	glob.streams.broadcast("main", serverPackets.notification(' '.join(message[:])))
+	msg = ' '.join(message[:])
+	if not msg.strip():
+		return False
+	glob.streams.broadcast("main", serverPackets.notification(msg))
 	return False
 
 def alertUser(fro, chan, message):
-	target = message[0].replace("_", " ")
-
-	targetToken = glob.tokens.getTokenFromUsername(target)
+	target = message[0].lower()
+	targetToken = glob.tokens.getTokenFromUsername(userUtils.safeUsername(target), safe=True)
 	if targetToken is not None:
-		targetToken.enqueue(serverPackets.notification(' '.join(message[1:])))
+		msg = ' '.join(message[1:])
+		if not msg.strip():
+			return False
+		targetToken.enqueue(serverPackets.notification(msg))
 		return False
 	else:
 		return "User offline."
@@ -574,26 +579,28 @@ def getTillerinoRecommendation(fro, chan, message):
 		userID = token.userID
 		
 		l = glob.db.fetch("SELECT * from tillerino_maplists WHERE user = {}".format(str(userID)))
-		i = glob.db.fetch("SELECT * from tillerino_offsets WHERE user = {}".format(str(userID)))['offset']
-		maplist = l['maplist'].split(',')
-		if(i >= len(maplist)):
-			return "I have nothing to recommend you"
-		data = None 
-		while (data is None):
-			map = maplist[i]
-			i += 1
-			data = glob.db.fetch("SELECT beatmaps.beatmap_id as bid, beatmaps.song_name as sn from beatmaps WHERE beatmap_md5 = \'{}\'".format(map))
-				
-		modsEnum = 0
-		if token is not None:
-			token.tillerino = [int(data["bid"]), 0 , -1.0]
+		i = glob.db.fetch("SELECT * from tillerino_offsets WHERE user = {}".format(str(userID)))
+		if i is not None:
+			i = i['offset']
+			maplist = l['maplist'].split(',')
+			if(i >= len(maplist)):
+				return "I have nothing to recommend you"
+			data = None 
+			while (data is None):
+				map = maplist[i]
+				i += 1
+				data = glob.db.fetch("SELECT beatmaps.beatmap_id as bid, beatmaps.song_name as sn from beatmaps WHERE beatmap_md5 = \'{}\'".format(map))
+					
+			modsEnum = 0
+			if token is not None:
+				token.tillerino = [int(data["bid"]), 0 , -1.0]
 
-		glob.db.execute("UPDATE tillerino_offsets  SET offset = {} WHERE user = {}".format(str(i),str(userID)))
+			glob.db.execute("UPDATE tillerino_offsets  SET offset = {} WHERE user = {}".format(str(i),str(userID)))
 
 
 
-        # Return tillerino message
-		return getPPMessage(userID)
+	        # Return tillerino message
+			return getPPMessage(userID)
 	except Exception as a:
 		log.error("Unknown error in {}!\n```{}\n{}```".format("fokabotCommands", sys.exc_info(), traceback.format_exc()))
 		return False
@@ -672,14 +679,13 @@ def tillerinoLast(fro, chan, message):
 			return False
 
 		diffString = "difficulty_{}".format(gameModes.getGameModeForDB(data["play_mode"]))
-		rank = generalUtils.getRank(data["play_mode"], data["mods"], data["accuracy"],
-									data["300_count"], data["100_count"], data["50_count"], data["misses_count"])
+		rank = data["rank"]
 
 		ifPlayer = "{0} | ".format(fro) if chan != "FokaBot" else ""
 		ifFc = ""
 		if data["play_mode"] == gameModes.STD:
 			ifFc = " (FC)" if data["max_combo"] == data["fc"] else " {0}x/{1}x".format(data["max_combo"], data["fc"])
-		beatmapLink = "[http://osu.ppy.sh/b/{1} {0}]".format(data["sn"], data["bid"])
+		beatmapLink = "[http://osu.ppy.sh/b/{1} {0}]".format(data["sn"].encode("utf-8").decode("latin-1"), data["bid"])
 
 		hasPP = data["play_mode"] != gameModes.CTB
 
@@ -692,14 +698,6 @@ def tillerinoLast(fro, chan, message):
 				msg += ' ~ScoreV2~'
 			if(data["mods"] > 0):
 				msg += ' +' + generalUtils.readableMods(data["mods"])
-			
-		if not hasPP:
-			msg += " | {0:,}".format(data["score"])
-			msg += ifFc
-			msg += " | {0:.2f}%, {1}".format(data["accuracy"], rank.upper())
-			msg += " {{ {0} / {1} / {2} / {3} }}".format(data["300_count"], data["100_count"], data["50_count"], data["misses_count"])
-			msg += " | {0:.2f} stars".format(data[diffString])
-			return msg
 
 		msg += " ({0:.2f}%, {1})".format(data["accuracy"], rank.upper())
 		msg += ifFc
@@ -751,8 +749,6 @@ def pp(fro, chan, message):
 		return False
 	if gameMode is None:
 		gameMode = token.gameMode
-	if gameMode == gameModes.TAIKO or gameMode == gameModes.CTB:
-		return "PP for your current game mode is not supported yet."
 	pp = userUtils.getPP(token.userID, gameMode)
 	return "You have {:,} pp".format(pp)
 
