@@ -195,6 +195,8 @@ def sendMessage(fro = "", to = "", message = "", token = None, toIRC = True):
 		elif to.startswith("#multi_"):
 			toClient = "#multiplayer"
 		# Truncate message if > 2048 characters
+		if (message is None or len(message) < 1):
+			return 0
 		message = message[:2048]+"..." if len(message) > 2048 else message
 
 		# Check for word filters
@@ -273,7 +275,7 @@ def sendMessage(fro = "", to = "", message = "", token = None, toIRC = True):
 		# File and discord logs (public chat only)
 		if to.startswith("#") and not (message.startswith("\x01ACTION is playing") and to.startswith("#spect_")):
 			log.chat("{fro} @ {to}: {message}".format(fro=token.username, to=to, message=message.encode("latin-1").decode("utf-8")))
-			glob.schiavo.sendChatlog("**{fro} @ {to}:** {message}".format(fro=token.username, to=to, message=message.encode("latin-1").decode("utf-8")))
+			#glob.schiavo.sendChatlog("**{fro} @ {to}:** {message}".format(fro=token.username, to=to, message=message.encode("latin-1").decode("utf-8")))
 		return 0
 	except exceptions.userSilencedException:
 		token.enqueue(serverPackets.silenceEndTime(token.getSilenceSecondsLeft()))

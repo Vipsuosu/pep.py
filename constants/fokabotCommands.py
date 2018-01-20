@@ -491,7 +491,9 @@ def tillerinoNp(fro, chan, message):
 			"+DoubleTime": mods.DOUBLETIME,
 			"-HalfTime": mods.HALFTIME,
 			"+Flashlight": mods.FLASHLIGHT,
-			"-SpunOut": mods.SPUNOUT
+			"-SpunOut": mods.SPUNOUT,
+			"~Relax~": mods.RELAX,
+			"~Autopilot~": mods.RELAX2
 		}
 
 		if playWatch:
@@ -535,8 +537,8 @@ def tillerinoMods(fro, chan, message):
 		modsList = [message[0][i:i+2].upper() for i in range(0, len(message[0]), 2)]
 		modsEnum = 0
 		for i in modsList:
-			if i not in ["NO", "NF", "EZ", "HD", "HR", "DT", "HT", "NC", "FL", "SO","V2"]:
-				return "Invalid mods. Allowed mods: NO, NF, EZ, HD, HR, DT, HT, NC, FL, SO, V2. Do not use spaces for multiple mods."
+			if i not in ["NO", "NF", "EZ", "HD", "HR", "DT", "HT", "NC", "FL", "SO", "V2", "RX", "AP"]:
+				return "Invalid mods. Allowed mods: NO, NF, EZ, HD, HR, DT, HT, NC, FL, SO, V2, RX, AP. Do not use spaces for multiple mods."
 			if i == "NO":
 				modsEnum = 0
 				break
@@ -559,7 +561,11 @@ def tillerinoMods(fro, chan, message):
 			elif i == "SO":
 				modsEnum += mods.SPUNOUT
 			elif i == "V2":
-				modsEnum += mods.SCOREV2	
+				modsEnum += mods.SCOREV2
+			elif i == "RX":
+				modsEnum += mods.RELAX
+			elif i == "AP":
+				modsEnum += mods.RELAX2	
 		# Set mods
 		token.tillerino[1] = modsEnum
 
