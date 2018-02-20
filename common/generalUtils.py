@@ -151,7 +151,12 @@ def readableMods(__mods):
 		r += "FL"
 	if __mods & mods.SPUNOUT > 0:
 		r += "SO"
-
+	if __mods & mods.TOUCHSCREEN > 0:
+		r += "TC"
+	if __mods & mods.RELAX > 0:
+		r += "RX"
+	if __mods & mods.RELAX2 > 0:
+		r += "AP"
 	return r
 
 def strContains(s, w):

@@ -424,26 +424,8 @@ def getPPMessage(userID, just_data = False):
 		else:
 			msg += "{acc:.2f}%: {pp}pp".format(acc=token.tillerino[2], pp=data["pp"][0])
 
-		sec = data["length"]            
-		originalAR = data["ar"]
-		# calc new AR if HR/EZ is on
-		if (currentMods & mods.EASY) > 0:
-			data["od"] = round(max(0, data["od"] / 2),1)
-			data["ar"] = round(max(0, data["ar"] / 2),1)
-		elif (currentMods & mods.HARDROCK) > 0:
-			data["ar"] = round(min(10, data["ar"] * 1.4),1)
-			data["od"] = round(min(10, data["od"] * 1.4),1)
-		if(data["od"] == int(data["od"])):
-			data["od"] = int(data["od"])
-		if(data["ar"] == int(data["ar"])):
-			data["ar"] = int(data["ar"])            
-		if ((currentMods & mods.DOUBLETIME) > 0) :
-			sec = round(sec / 1.50)        
-			data["bpm"] = round(data["bpm"] * 1.50)            
-		elif ((currentMods & mods.HALFTIME) > 0) :
-			sec = round(sec * 1.35)  	
-			data["bpm"] = round(data["bpm"] * 0.75)
-	# Beatmap info	
+		sec = data["length"]
+		# Beatmap info	
 		h = ((sec//3600))%24
 		m = (sec//60)%60
 		s = sec%60
@@ -451,7 +433,7 @@ def getPPMessage(userID, just_data = False):
 			songlength = '{0}:{1:=02}:{2:=02}'.format(h, m, s)
 		else:
 			songlength = '{1:=02}:{2:=02}'.format(h, m, s)  
-		msg += " | {length} \u2605 {stars:.2f} \u266b {bpm} AR{ar} OD{od}".format(length=songlength,bpm=data["bpm"], stars=data["stars"], ar=data["ar"], od=data["od"])
+		msg += " | {length} {stars:.2f} \u2605  {bpm} \u266b AR{ar} OD{od}".format(length=songlength,bpm=data["bpm"], stars=data["stars"], ar=data["ar"], od=data["od"])
 		token.tillerino[2] = -1
 		# Return final message
 		return msg.encode("utf-8").decode("latin-1")
@@ -699,7 +681,7 @@ def tillerinoLast(fro, chan, message):
 		msg += beatmapLink
 		if data["play_mode"] != gameModes.STD:
 			msg += " <{0}>".format(gameModes.getGameModeForPrinting(data["play_mode"]))
-		if data["mods"] and data["play_mode"] == gameModes.STD:
+		if data["mods"] and data["play_mode"] != gameModes.MANIA:
 			if(data["mods"] & 536870912):
 				msg += ' ~ScoreV2~'
 			if(data["mods"] > 0):
