@@ -6,6 +6,7 @@ from constants import serverPackets
 from events import logoutEvent
 from objects import fokabot
 from objects import glob
+from common.constants import privileges
 
 
 def joinChannel(userID = 0, channel = "", token = None, toIRC = True):
@@ -178,6 +179,9 @@ def sendMessage(fro = "", to = "", message = "", token = None, toIRC = True):
 		# Redirect !report to FokaBot
 		if message.startswith("!report"):
 			to = "FokaBot"
+		invisible = False
+		if message.startswith("!last") and token.privileges & privileges.USER_DONOR <= 0:
+			invisible = True
 
 		# Determine internal name if needed
 		# (toclient is used clientwise for #multiplayer and #spectator channels)
@@ -209,6 +213,18 @@ def sendMessage(fro = "", to = "", message = "", token = None, toIRC = True):
 		isChannel = to.startswith("#")
 		if isChannel:
 			# CHANNEL
+			if(invisible and to.startswith("#osu")):
+				fokaMessage = fokabot.fokabotResponse(token.username, to, message)
+				if fokaMessage:
+					packet = serverPackets.sendMessage("FokaBot", to, fokaMessage)
+					token.enqueue(packet)
+				if token.lastAlert == False:
+					lastMessage = "Yo, !last command is invisible in #osu if you aren't druzhban:)"
+					packet = serverPackets.sendMessage("Xxdstem", to, lastMessage)
+					token.enqueue(packet)
+					token.lastAlert = True
+
+				return
 			# Make sure the channel exists
 			if to not in glob.channels.channels:
 				raise exceptions.channelUnknownException()

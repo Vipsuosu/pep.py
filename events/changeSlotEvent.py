@@ -7,7 +7,8 @@ def handle(userToken, packetData):
 
 	# Read packet data
 	packetData = clientPackets.changeSlot(packetData)
-
+	if userToken.matchID not in glob.matches.matches:
+		return
 	with glob.matches.matches[userToken.matchID] as match:
 		# Change slot
 		match.userChangeSlot(userID, packetData["slotID"])

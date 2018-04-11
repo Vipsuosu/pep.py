@@ -81,6 +81,8 @@ class token:
 		self.gameRank = 0
 		self.pp = 0
 
+		self.lastAlert = False
+
 		# Generate/set token
 		if token_ is not None:
 			self.token = token_
@@ -111,7 +113,6 @@ class token:
 		try:
 			# Acquire the buffer lock
 			self._bufferLock.acquire()
-
 			# Never enqueue for IRC clients or Foka
 			if self.irc or self.userID < 999:
 				return
@@ -411,7 +412,7 @@ class token:
 
 		# Silence the user if needed
 		if self.spamRate > 10:
-			self.silence(1800, "Spamming (auto spam protection)")
+			self.silence(600, "Spamming (auto spam protection)")
 
 	def isSilenced(self):
 		"""
@@ -546,7 +547,7 @@ class token:
 		"""
 		if len(self.messagesBuffer) > 9:
 			self.messagesBuffer = self.messagesBuffer[1:]
-		self.messagesBuffer.append("{time} - {user}@{channel}: {message}".format(time=time.strftime("%H:%M", time.localtime()), user=self.username, channel=chan, message=message[:50]))
+		self.messagesBuffer.append("{time} - {user}@{channel}: {message}".format(time=time.strftime("%H:%M", time.localtime()), user=self.username, channel=chan, message=message[:50].encode("cp1252","ignore").decode("utf-8","ignore")))
 
 	def getMessagesBufferString(self):
 		"""

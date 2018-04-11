@@ -1,6 +1,9 @@
+import time
 from common.log import logUtils as log
 from constants import clientPackets
 from constants import serverPackets
+from common.constants import privileges
+from common.constants import actions
 from objects import glob
 
 def handle(userToken, packetData):
@@ -22,12 +25,12 @@ def handle(userToken, packetData):
 
 	# If we are not in spectate status but we're spectating someone, stop spectating
 	'''
-if userToken.spectating != 0 and userToken.actionID != actions.WATCHING and userToken.actionID != actions.IDLE and userToken.actionID != actions.AFK:
-	userToken.stopSpectating()
+	if userToken.spectating != 0 and userToken.actionID != actions.WATCHING and userToken.actionID != actions.IDLE and userToken.actionID != actions.AFK:
+		userToken.stopSpectating()
 
-# If we are not in multiplayer but we are in a match, part match
-if userToken.matchID != -1 and userToken.actionID != actions.MULTIPLAYING and userToken.actionID != actions.MULTIPLAYER and userToken.actionID != actions.AFK:
-	userToken.partMatch()
+	# If we are not in multiplayer but we are in a match, part match
+	if userToken.matchID != -1 and userToken.actionID != actions.MULTIPLAYING and userToken.actionID != actions.MULTIPLAYER and userToken.actionID != actions.AFK:
+		userToken.partMatch()
 		'''
 
 	# Update cached stats if our pp changed if we've just submitted a score or we've changed gameMode
@@ -39,12 +42,14 @@ if userToken.matchID != -1 and userToken.actionID != actions.MULTIPLAYING and us
 		userToken.updateCachedStats()
 
 	# Always update action id, text, md5 and beatmapID
+
 	userToken.actionID = packetData["actionID"]
 	userToken.actionText = packetData["actionText"]
 	userToken.actionMd5 = packetData["actionMd5"]
 	userToken.actionMods = packetData["actionMods"]
 	userToken.beatmapID = packetData["beatmapID"]
-
+	if (userToken.privileges & privileges.USER_DONOR > 0) and userToken.actionID in [actions.PLAYING, actions.WATCHING, actions.MULTIPLAYING, actions.PAUSED, actions.MULTIPLAYER, actions.SUBMITTING]:
+		glob.redis.set("mikuia:now_playing:{}".format(userID), packetData["actionMd5"], 700)
 	# Enqueue our new user panel and stats to us and our spectators
 	recipients = [userToken]
 	if len(userToken.spectators) > 0:
@@ -55,9 +60,8 @@ if userToken.matchID != -1 and userToken.actionID != actions.MULTIPLAYING and us
 	for i in recipients:
 		if i is not None:
 			# Force our own packet
-			force = True if i == userToken else False
-			i.enqueue(serverPackets.userPanel(userID, force))
-			i.enqueue(serverPackets.userStats(userID, force))
+			i.enqueue(serverPackets.userPanel(userID, i == userToken))
+			i.enqueue(serverPackets.userStats(userID, i == userToken))
 
 	# Console output
 	log.info("{} changed action: {} [{}][{}][{}]".format(username, str(userToken.actionID), userToken.actionText, userToken.actionMd5, userToken.beatmapID))
