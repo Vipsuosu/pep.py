@@ -44,23 +44,19 @@ def instantRestart(fro, chan, message):
 def faq(fro, chan, message):
 	# TODO: Unhardcode this
 	if message[0] == "rules":
-		return "Please make sure to check (Ripple's rules)[http://ripple.moe/?p=23]."
+		return "Please make sure to check (Ripple's rules)[http://vipsu.ml/?p=23]."
 	elif message[0] == "swearing":
 		return "Please don't abuse swearing"
 	elif message[0] == "spam":
 		return "Please don't spam"
 	elif message[0] == "offend":
 		return "Please don't offend other players"
-	elif message[0] == "github":
-		return "(Ripple's Github page!)[https://github.com/osuripple/ripple]"
 	elif message[0] == "discord":
-		return "(Join Ripple's Discord!)[https://discord.gg/0rJcZruIsA6rXuIx]"
-	elif message[0] == "blog":
-		return "You can find the latest Ripple news on the (blog)[https://ripple.moe/blog/]!"
+		return "(Join Ripple's Discord!)[https://discordapp.com/invite/QxqxHqR]"
 	elif message[0] == "changelog":
-		return "Check the (changelog)[https://ripple.moe/index.php?p=17] !"
+		return "Check the (changelog)[https://vipsu.ml/index.php?p=17] !"
 	elif message[0] == "status":
-		return "Check the server status (here!)[https://ripple.moe/index.php?p=27]"
+		return "Check the server status (here!)[https://new.vipsu.ml/index.php?p=27]"
 	elif message[0] == "english":
 		return "Please keep this channel in english."
 	else:
@@ -1213,7 +1209,7 @@ commands = [
 		"callback": report
 	}, {
 		"trigger": "!help",
-		"response": "Click (here)[https://ripple.moe/index.php?p=16&id=4] for FokaBot's full command list"
+		"response": "Click (here)[https://vipsu.ml/index.php?p=16&id=4] for FokaBot's full command list"
 	}, #{
 		#"trigger": "!ask",
 		#"syntax": "<question>",
