@@ -235,7 +235,7 @@ def calculateAccuracy(userID, gameMode):
 		divideTotal = 0
 		k = 0
 		for i in bestAccScores:
-			add = int((0.95 ** k) * 100)
+			add = int((0.97 ** k) * 100)
 			totalAcc += i["accuracy"] * add
 			divideTotal += add
 			k += 1
@@ -264,7 +264,7 @@ def calculatePP(userID, gameMode):
 	if bestPPScores is not None:
 		k = 0
 		for i in bestPPScores:
-			new = round(round(i["pp"]) * 0.95 ** k)
+			new = round(round(i["pp"]) * 0.97 ** k)
 			totalPP += new
 			k += 1
 
