@@ -115,7 +115,7 @@ def handle(tornadoRequest):
 			if expireDate-int(time.time()) <= 86400*3:
 				expireDays = round((expireDate-int(time.time()))/86400)
 				expireIn = "{} days".format(expireDays) if expireDays > 1 else "less than 24 hours"
-				responseToken.enqueue(serverPackets.notification("Your druzhban tag expires in {}!".format(expireIn)))
+				responseToken.enqueue(serverPackets.notification("Your Donator tag expires in {}!".format(expireIn)))
 
 
 		# Set silence end UNIX time in token
@@ -165,7 +165,7 @@ def handle(tornadoRequest):
 		# TODO: Configurable default channels
 		chat.joinChannel(token=responseToken, channel="#osu")
 		chat.joinChannel(token=responseToken, channel="#announce")
-		chat.joinChannel(token=responseToken, channel="#beatmaps")
+		chat.joinChannel(token=responseToken, channel="#nowranked")
 		# Join admin channel if we are an admin
 		if responseToken.admin or responseToken.privileges & privileges.USER_DONOR > 0:
 			chat.joinChannel(token=responseToken, channel="#admin")

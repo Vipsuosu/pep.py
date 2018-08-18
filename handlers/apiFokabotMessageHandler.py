@@ -24,7 +24,7 @@ class handler(requestsManager.asyncRequestHandler):
 
 			# Check ci key
 			msg = self.get_argument("msg")
-			message = msg.replace("ripple.moe","osu.gatari.pw")
+			message = msg.replace("ripple.moe","vipsu.pml")
 			key = self.get_argument("k")
 			if key is None or key != glob.conf.config["server"]["cikey"]:
 				raise exceptions.invalidArgumentsException()
